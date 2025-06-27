@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ artwork.name }} - Ghibli Art Gallery{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'home' %}" class="text-white">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'gallery' %}" class="text-white">
+                        <i class="fas fa-images"></i> Gallery
+                    </a>
+                </li>
+                <li class="breadcrumb-item active text-white-50">
+                    {{ artwork.name }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Artwork Images -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-palette"></i> {{ artwork.name }}
+                </h4>
+                <div id="artwork-status">
+                    <span class="status-badge status-{{ artwork.status }}">
+                        {{ artwork.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Original Image -->
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted">
+                            <i class="fas fa-image"></i> Original Image
+                        </h6>
+                        <div class="image-container">
+                            <img src="{{ artwork.original_image.url }}" 
+                                 alt="Original {{ artwork.name }}" 
+                                 class="img-fluid shadow"
+                                 style="width: 100%; height: 300px; object-fit: cover; border-radius: 10px;">
+                            <div class="image-label">Original</div>
+                        </div>
+                        <div class="mt-2">
+                            <a href="{{ artwork.original_image.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-expand"></i> View Full Size
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Converted Image -->
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted">
+                            <i class="fas fa-magic"></i> Ghibli Style
+                        </h6>
+                        <div id="converted-image-container">
+                            {% if artwork.is_processed and artwork.converted_image %}
+                                <div class="image-container">
+                                    <img src="{{ artwork.converted_image.url }}" 
+                                         alt="Ghibli {{ artwork.name }}" 
+                                         class="img-fluid shadow"
+                                         style="width: 100%; height: 300px; object-fit: cover; border-radius: 10px;">
+                                    <div class="image-label">Ghibli Style</div>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="{{ artwork.converted_image.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-expand"></i> View Full Size
+                                    </a>
+                                    <a href="{{ artwork.converted_image.url }}" download="{{ artwork.name }}_ghibli.jpg" 
+                                       class="btn btn-sm btn-success">
+                                        <i class="fas fa-download"></i> Download
+                                    </a>
+                                </div>
+                            {% elif artwork.is_processing %}
+                                <div class="d-flex align-items-center justify-content-center bg-light" 
+                                     style="height: 300px; border-radius: 10px;">
+                                    <div class="text-center">
+                                        <div class="loading-spinner"></div>
+                                        <p class="text-muted mt-2">
+                                            <i class="fas fa-cog fa-spin"></i> Processing your artwork...
+                                        </p>
+                                        <small class="text-muted">This may take a few minutes</small>
+                                    </div>
+                                </div>
+                            {% elif artwork.has_error %}
+                                <div class="d-flex align-items-center justify-content-center bg-light border border-danger" 
+                                     style="height: 300px; border-radius: 10px;">
+                                    <div class="text-center text-danger">
+                                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                                        <p>Processing failed</p>
+                                        <form method="post" action="{% url 'retry_artwork' artwork.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-redo"></i> Retry
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="d-flex align-items-center justify-content-center bg-light border border-warning" 
+                                     style="height: 300px; border-radius: 10px;">
+                                    <div class="text-center text-warning">
+                                        <i class="fas fa-clock fa-3x mb-3"></i>
+                                        <p>Waiting to process...</p>
+                                        <small>Your artwork is in the queue</small>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Error Container -->
+                <div id="error-container">
+                    {% if artwork.has_error and artwork.error_message %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Error:</strong> {{ artwork.error_message }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Artwork Details -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Artwork Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-5">Name:</dt>
+                    <dd class="col-7">{{ artwork.name }}</dd>
+                    
+                    <dt class="col-5">Status:</dt>
+                    <dd class="col-7">
+                        <span class="status-badge status-{{ artwork.status }}">
+                            {{ artwork.get_status_display }}
+                        </span>
+                    </dd>
+                    
+                    <dt class="col-5">Method:</dt>
+                    <dd class="col-7">{{ artwork.get_conversion_method_display }}</dd>
+                    
+                    <dt class="col-5">Created:</dt>
+                    <dd class="col-7">{{ artwork.created_at|date:"M d, Y H:i" }}</dd>
+                    
+                    {% if artwork.processing_started %}
+                    <dt class="col-5">Started:</dt>
+                    <dd class="col-7">{{ artwork.processing_started|date:"M d, Y H:i" }}</dd>
+                    {% endif %}
+                    
+                    {% if artwork.processing_completed %}
+                    <dt class="col-5">Completed:</dt>
+                    <dd class="col-7">{{ artwork.processing_completed|date:"M d, Y H:i" }}</dd>
+                    {% endif %}
+                    
+                    {% if artwork.processing_time %}
+                    <dt class="col-5">Time Taken:</dt>
+                    <dd class="col-7">
+                        <i class="fas fa-clock"></i> {{ artwork.processing_time|floatformat:1 }} seconds
+                    </dd>
+                    {% endif %}
+                    
+                    {% if artwork.original_file_size %}
+                    <dt class="col-5">File Size:</dt>
+                    <dd class="col-7">{{ artwork.original_file_size|filesizeformat }}</dd>
+                    {% endif %}
+                    
+                    {% if artwork.retry_count > 0 %}
+                    <dt class="col-5">Retries:</dt>
+                    <dd class="col-7">{{ artwork.retry_count }}</dd>
+                    {% endif %}
+                </dl>
+                
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    {% if artwork.has_error %}
+                        <form method="post" action="{% url 'retry_artwork' artwork.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning w-100">
+                                <i class="fas fa-redo"></i> Retry Processing
+                            </button>
+                        </form>
+                    {% endif %}
+                    
+                    {% if artwork.is_processed and artwork.converted_image %}
+                        <a href="{{ artwork.converted_image.url }}" download="{{ artwork.name }}_ghibli.jpg" 
+                           class="btn btn-success">
+                            <i class="fas fa-download"></i> Download Ghibli Version
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'gallery' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Gallery
+                    </a>
+                    
+                    <a href="{% url 'upload' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-upload"></i> Upload Another
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Share Section -->
+        {% if artwork.is_processed %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-share-alt"></i> Share Your Artwork
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <p class="text-muted">Share this amazing transformation with your friends!</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="shareArtwork()">
+                        <i class="fas fa-share"></i> Share
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="copyLink()">
+                        <i class="fas fa-link"></i> Copy Link
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Similar Artworks -->
+{% if similar_artworks %}
+<div class="row mt-5">
+    <div class="col-12 text-center text-white mb-4">
+        <h4>
+            <i class="fas fa-thumbs-up"></i> 
+            Similar Artworks
+        </h4>
+        <p>More {{ artwork.get_conversion_method_display }} creations</p>
+    </div>
+</div>
+<div class="row">
+    {% for similar in similar_artworks %}
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">{{ similar.name }}</h6>
+                <div class="image-comparison">
+                    <div class="image-container">
+                        <img src="{{ similar.original_image.url }}" alt="{{ similar.name }}" 
+                             style="height: 80px; object-fit: cover;">
+                        <div class="image-label">Original</div>
+                    </div>
+                    <div class="image-container">
+                        {% if similar.converted_image %}
+                            <img src="{{ similar.converted_image.url }}" alt="{{ similar.name }}" 
+                                 style="height: 80px; object-fit: cover;">
+                            <div class="image-label">Ghibli</div>
+                        {% else %}
+                            <div class="d-flex align-items-center justify-content-center bg-light" style="height: 80px;">
+                                <small class="text-muted">Processing</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-2 text-center">
+                    <a href="{% url 'artwork_detail' similar.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function shareArtwork() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ artwork.name }} - Ghibli Style',
+                text: 'Check out this amazing Ghibli-style transformation!',
+                url: window.location.href
+            }).catch(console.error);
+        } else {
+            copyLink();
+        }
+    }
+    
+    function copyLink() {
+        navigator.clipboard.writeText(window.location.href).then(function() {
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check"></i> Link copied to clipboard!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.card-body').appendChild(alertDiv);
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+        }).catch(function() {
+            alert('Could not copy link. Please copy the URL manually.');
+        });
+    }
+    
+    // Auto-refresh status for processing artworks
+    {% if artwork.is_processing or artwork.status == 'pending' %}
+    const statusChecker = setInterval(function() {
+        fetch(`/api/artwork/{{ artwork.pk }}/status/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_completed || data.has_error) {
+                    location.reload();
+                    clearInterval(statusChecker);
+                }
+            })
+            .catch(error => console.error('Error checking status:', error));
+    }, 5000); // Check every 5 seconds
+    {% endif %}
+</script>
+{% endblock %}

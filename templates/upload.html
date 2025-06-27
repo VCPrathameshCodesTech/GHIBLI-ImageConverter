@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload - Ghibli Art Gallery{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white text-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-upload"></i> Upload Your Photo for Ghibli Transformation
+                </h3>
+                <small>Transform your images into magical Studio Ghibli artwork</small>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-tag"></i> {{ form.name.label }}
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.name.errors %}
+                                    <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> {{ form.name.help_text }}
+                        </small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.original_image.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-image"></i> {{ form.original_image.label }}
+                        </label>
+                        {{ form.original_image }}
+                        {% if form.original_image.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.original_image.errors %}
+                                    <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> {{ form.original_image.help_text }}
+                        </small>
+                    </div>
+                    
+                    <!-- Image Preview -->
+                    <div class="mb-4" id="imagePreview" style="display: none;">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-eye"></i> Preview
+                        </label>
+                        <div class="text-center">
+                            <div class="image-container d-inline-block">
+                                <img id="previewImg" src="" alt="Preview" class="img-fluid rounded shadow" style="max-height: 300px;">
+                                <div class="image-label">Preview</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.conversion_method.id_for_label }}" class="form-label fw-bold">
+                            <i class="fas fa-cogs"></i> {{ form.conversion_method.label }}
+                        </label>
+                        {{ form.conversion_method }}
+                        {% if form.conversion_method.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.conversion_method.errors %}
+                                    <small><i class="fas fa-exclamation-circle"></i> {{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="mt-2">
+                            <small class="form-text text-muted">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong><i class="fas fa-star text-success"></i> Hugging Face:</strong> FREE, good quality<br>
+                                        <strong><i class="fas fa-dollar-sign text-warning"></i> OpenAI:</strong> High quality, faster<br>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong><i class="fas fa-dollar-sign text-warning"></i> Stability AI:</strong> Best quality<br>
+                                        <strong><i class="fas fa-dollar-sign text-warning"></i> Replicate:</strong> Alternative option<br>
+                                    </div>
+                                </div>
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Home
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <span id="submitText">
+                                <i class="fas fa-magic"></i> Transform to Ghibli Style
+                            </span>
+                            <span id="submitSpinner" style="display: none;">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                Processing...
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tips Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb text-warning"></i> Tips for Better Results
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                <strong>High-quality images work best:</strong> Use images with good lighting and clear subjects
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                <strong>Portraits and landscapes:</strong> These typically produce the most stunning transformations
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check text-success"></i>
+                                <strong>Clear, well-lit photos:</strong> Better source images = better Ghibli art
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-times text-danger"></i>
+                                <strong>Avoid very dark or blurry photos:</strong> The AI works better with clear images
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-clock text-info"></i>
+                                <strong>Processing time:</strong> FREE methods take 2-5 minutes, paid methods are faster
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-info text-primary"></i>
+                                <strong>Be descriptive with names:</strong> Good names help identify your artwork later
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Examples Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-images text-primary"></i> What Works Best
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-user fa-3x text-success mb-2"></i>
+                            <h6>Portraits</h6>
+                            <small class="text-muted">People, faces, characters</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-mountain fa-3x text-success mb-2"></i>
+                            <h6>Landscapes</h6>
+                            <small class="text-muted">Nature, cities, scenery</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="fas fa-paw fa-3x text-success mb-2"></i>
+                            <h6>Animals</h6>
+                            <small class="text-muted">Pets, wildlife, creatures</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Image preview functionality
+    document.getElementById('{{ form.original_image.id_for_label }}').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        if (file) {
+            // Check file size
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                alert('File size too large! Maximum size is 10MB.');
+                this.value = '';
+                preview.style.display = 'none';
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+                preview.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+    
+    // Form submission handling
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitBtn');
+        const submitText = document.getElementById('submitText');
+        const submitSpinner = document.getElementById('submitSpinner');
+        const nameInput = document.querySelector('input[name="name"]');
+        const imageInput = document.querySelector('input[name="original_image"]');
+        
+        // Basic validation
+        if (!nameInput.value.trim()) {
+            alert('Please enter an artwork name');
+            nameInput.focus();
+            e.preventDefault();
+            return;
+        }
+        
+        if (!imageInput.files[0]) {
+            alert('Please select an image to upload');
+            imageInput.focus();
+            e.preventDefault();
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitText.style.display = 'none';
+        submitSpinner.style.display = 'inline-block';
+        
+        // Show progress message
+        setTimeout(() => {
+            if (submitBtn.disabled) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-info mt-3';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Upload in progress...</strong> Please don't close this page. 
+                    You'll be redirected when the upload is complete.
+                `;
+                document.getElementById('uploadForm').appendChild(alertDiv);
+            }
+        }, 2000);
+    });
+    
+    // File type validation
+    document.getElementById('{{ form.original_image.id_for_label }}').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('Invalid file type! Please use JPEG, PNG, or WebP.');
+                this.value = '';
+                document.getElementById('imagePreview').style.display = 'none';
+                return;
+            }
+        }
+    });
+    
+    // Auto-focus on name field
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('input[name="name"]').focus();
+    });
+</script>
+{% endblock %}

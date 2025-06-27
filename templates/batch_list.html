@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Batch Uploads - Ghibli Art Gallery{% endblock %}
+
+{% block content %}
+<!-- Batch List Header -->
+<div class="row mb-4">
+    <div class="col-12 text-center text-white">
+        <h1 class="hero-title">
+            <i class="fas fa-archive"></i> Batch Uploads
+        </h1>
+        <p class="hero-subtitle">View all your batch image processing jobs</p>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12 text-center">
+        <a href="{% url 'batch_upload' %}" class="btn btn-success btn-lg me-3">
+            <i class="fas fa-plus"></i> New Batch Upload
+        </a>
+        <a href="{% url 'gallery' %}" class="btn btn-outline-light btn-lg">
+            <i class="fas fa-images"></i> View Gallery
+        </a>
+    </div>
+</div>
+
+<!-- Batch List -->
+{% if page_obj %}
+<div class="row">
+    {% for batch in page_obj %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="card-title">
+                        <i class="fas fa-folder"></i> {{ batch.name }}
+                    </h5>
+                    <span class="status-badge status-{{ batch.status }}">
+                        {% if batch.status == 'uploading' %}
+                            <i class="fas fa-upload"></i>
+                        {% elif batch.status == 'extracting' %}
+                            <i class="fas fa-file-archive"></i>
+                        {% elif batch.status == 'processing' %}
+                            <i class="fas fa-cog fa-spin"></i>
+                        {% elif batch.status == 'completed' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif batch.status == 'failed' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% endif %}
+                        {{ batch.get_status_display }}
+                    </span>
+                </div>
+                
+                <!-- Progress Bar -->
+                {% if batch.is_processing %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">Processing Progress</small>
+                        <small class="text-muted">{{ batch.processed_images }}/{{ batch.total_images }}</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: {{ batch.progress_percentage }}%">
+                            {{ batch.progress_percentage }}%
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Batch Statistics -->
+                <div class="row text-center mb-3">
+                    <div class="col-3">
+                        <div class="text-primary">
+                            <strong>{{ batch.total_images }}</strong>
+                            <br><small>Total</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-success">
+                            <strong>{{ batch.successful_images }}</strong>
+                            <br><small>Success</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-danger">
+                            <strong>{{ batch.failed_images }}</strong>
+                            <br><small>Failed</small>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="text-info">
+                            <strong>{{ batch.get_conversion_method_display }}</strong>
+                            <br><small>Style</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Batch Info -->
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar"></i> 
+                        Created: {{ batch.created_at|date:"M d, Y H:i" }}
+                    </small>
+                    {% if batch.processing_completed %}
+                    <br>
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> 
+                        Completed: {{ batch.processing_completed|date:"M d, Y H:i" }}
+                    </small>
+                    {% endif %}
+                </div>
+                
+                <!-- Error Message -->
+                {% if batch.error_message %}
+                <div class="alert alert-danger alert-sm">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <small>{{ batch.error_message }}</small>
+                </div>
+                {% endif %}
+                
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                    <a href="{% url 'batch_detail' batch.pk %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                    
+                    {% if batch.status == 'failed' %}
+                        <form method="post" action="{% url 'batch_retry' batch.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-warning btn-sm">
+                                <i class="fas fa-redo"></i> Retry
+                            </button>
+                        </form>
+                    {% elif batch.is_completed %}
+                        <span class="btn btn-success btn-sm disabled">
+                            <i class="fas fa-check"></i> Complete
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Batch list pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">
+                    <i class="fas fa-angle-double-left"></i> First
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                    <i class="fas fa-angle-left"></i> Previous
+                </a>
+            </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                    Next <i class="fas fa-angle-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                    Last <i class="fas fa-angle-double-right"></i>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="row">
+    <div class="col-12 text-center">
+        <div class="card py-5">
+            <div class="card-body">
+                <i class="fas fa-archive fa-5x text-muted mb-4"></i>
+                <h3>No batch uploads yet</h3>
+                <p class="text-muted mb-4">Start by uploading your first batch of images!</p>
+                <a href="{% url 'batch_upload' %}" class="btn btn-success btn-lg">
+                    <i class="fas fa-upload"></i> Create First Batch
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Statistics -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>
+                    <i class="fas fa-chart-bar"></i> Batch Statistics
+                </h5>
+                <p class="text-muted mb-0">
+                    <strong>Total batches:</strong> {{ total_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
